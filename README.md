@@ -1,8 +1,34 @@
 # NLP-HW2
 
-Documentation
-The word vectors used in the default solution are not dependant on context and are the same in all situations. But in real life, one word may have different meanings in different sentences. For example, I can refer to the homework description example of the word "dry". So it is obvious that there are lots of words that can be synonym in some situations, but their word vectors are far together.
-By using the semantic relations from an ontology like Wordnet and modify the word vectors to use that information, we can make the word vectors more useful for tasks like lexical substitution which depends on knowledge of various senses of the target word.By implementing the baseline in homework, we created a new word vector which is covering more possible similar words to a specific word, and we could improve the accuracy to 53.02 percent.
-As we changed the word vector to cover more possible synonyms for a word, we could improve the accuracy to 53 percent. We set the alpha and beta to one to get this result. One possible way for improving the result is to change the alpha and beta and see how the accuracy changes. We tried a couple of different numbers but the best accuracy we got was for the alpha and beta equal to one.
-The other approach we thought of was using ELMO which considers the previous words of a word to create the word vector for it. But it was stated in homework we shouldn't use such approaches.
-The other approach we thought of was using this paper: "context2vec: Learning Generic Context Embedding with Bidirectional LSTM. Oren Melamud, Jacob Goldberger, Ido Dagan. CoNLL, 2016" to add context to the word vectors, but unfortunately, our implementation couldn't help us to get a better score.
+ In this homework, we are working on the task of finding a suitable substitution for a target word in a sentence.There is a default solution that produces 10 candidates for each lexical substitution and if any of them match the substitute words preferred by a group of human annotators then that substitution is marked as correct.The overall score reported is the precision score over the entire data set which is described in detail in the Accuracy section below. The accuracy of the default solution is 0.28. What we are going to do is to create a retrofit function which changes the glove.6B.100d.magnitude file so when our solution produces 10 guesses for each lexical substitution the chance of having at least one correct guess would increase. The objective of retrofitting is to learn a matrix Q=(q1,…,qn) such that the columns of the matrix Q are close to use the ontology graph G in order to the word vectors in Q̂ =(q̂ 1,…,q̂ n).The algorithm to find Q is as follows:   
+Initialize Q_hat to be equal to the vectors in Q:
+
+ ####lexicon[word] # change neighbours
+            qj_word = set(lexicon[word]).intersection(wvVocab) 
+            num_neighbor = len(qj_word)
+
+  #### Update Q
+            if num_neighbor == 0:
+            qj = []
+            for w in qj_word:
+            qj.append(Q[w])
+            qi_hat = Q_hat[word]
+                
+                
+####For iterations t=1…T take the derivative of L(Q) wrt each qi word vector and assign it to zero to get an update: qi=∑j:(i,j)∈Eβijqj+αiq̂ i∑j:(i,j)∈Eβij+αi       
+
+    
+                alpha_i = 1
+                beta_i_j = 1
+
+                sigma_qj_beta_i_j = 0
+                for j in range(len(qj)):
+                  sigma_qj_beta_i_j = np.add(sigma_qj_beta_i_j, np.multiply(qj[j], beta_i_j))
+
+                sigma_beta_i_j = 0
+                for j in range(len(qj)):
+                  sigma_beta_i_j += beta_i_j
+                  Q[word] = np.divide(np.add(sigma_qj_beta_i_j, np.multiply(qi_hat, alpha_i)), sigma_beta_i_j + alpha_i)
+
+    return Q
+With using this algorith we create the glove.6B.100d.retrofit.magnitude file and use that to find synonyms.
